@@ -1,0 +1,3 @@
+curl --proxy "localhost:8080" "http://example.com/" -v
+curl --proxy "localhost:8080" "http://oosc.online/" -v
+curl --proxy "localhost:8080" "http://testphp.vulnweb.com/login.php" -v
