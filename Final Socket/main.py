@@ -13,7 +13,7 @@ class Cache:
         Khởi tạo đối tượng Cache.
 
         Args:
-            cache_time (int): Thời gian tối đa cho dữ liệu cache (tính bằng giây).
+            cache_time (int): Thời gian tối đa cho dữ liệu cache (tính bằng giây)
             cache_directory (str): Đường dẫn đến thư mục lưu trữ dữ liệu cache.
         """
         self.cache_time = cache_time
