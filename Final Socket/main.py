@@ -193,7 +193,6 @@ def deal_with_client(client_socket, client_address, whitelisting, time_range, ca
                 server.sendall(client_data)  # Forward the client's request to the server
                 response_data = server.recv(4096)
                 response_method, response_url, response_headers = parse_data(response_data)
-                client_socket.sendall(response_data)  # Forward the server's response to the client
                 
                 # Nếu có "transfer-encoding" trong dữ liệu đọc đến khi gặp b"0\r\n\r\n".
                 if "transfer-encoding" in response_headers:
@@ -222,12 +221,13 @@ def deal_with_client(client_socket, client_address, whitelisting, time_range, ca
                 print(response_method)
                 print(response_url)
                 print(response_headers)
-                client_socket.sendall(response_data)
                 
             except Exception as Error:
                 print(f"Can not get Server's IP: {Error}")
             finally:
                 server.close()
+                client_socket.sendall(response_data)  # Forward the server's response to the client
+
 
     except Exception as Error:
         print(f"Unable to connect to the server: {Error}")
