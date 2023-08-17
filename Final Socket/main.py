@@ -182,6 +182,28 @@ def available_time_range(time_range):
     end_time = datetime.time(time_range[1]) # thời gian kết thúc (10h tối)
     return start_time <= now <= end_time # kiểm tra xem thời gian hiện tại có nằm giữa thời gian bắt đầu và thời gian kết thúc không
 
+def receive_data_from_server(server):
+    """
+    Nhận dữ liệu từ máy chủ.
+
+    Args:
+        server (socket.socket): Đối tượng socket máy chủ.
+
+    Returns:
+        bytes: Dữ liệu nhận từ máy chủ.
+    """
+    data = b""
+    while not data.endswith(b"\r\n\r\n"):
+        try:
+            chunk = server.recv(4096)
+            if not chunk:
+                break
+            data += chunk
+        except Exception as Error:
+            print(f"Error while receiving data from server: {Error}")
+            break
+    return data
+
 def deal_with_client(client_socket, client_address, whitelisting, time_range, cache):
     """
     Xử lý kết nối từ client và xử lý các yêu cầu HTTP.
@@ -235,12 +257,20 @@ def deal_with_client(client_socket, client_address, whitelisting, time_range, ca
                 # Lấy địa chỉ IP từ tên miền và kết nối tới máy chủ ảnh
                 SERVER_ADDRESS = (get_ip_from_domain_name(domain_name), 80)
                 server.connect(SERVER_ADDRESS)
-                print(f"Linked to: {SERVER_ADDRESS}")
+                print(f"Connecting to: {domain_name}")
 
                 # Gửi yêu cầu của client tới server ảnh
                 server.sendall(client_data)
                 response_data = server.recv(4096)
                 response_method, response_url, response_headers = parse_data(response_data)
+
+                if method[0].upper() == "HEAD":
+                    client_socket.sendall(response_data)
+                    return
+
+                if method[0].upper() ==  "POST":
+                    server.sendall(response_data)
+                    response_data = receive_data_from_server(server)
                 
                 # Xử lý các trường hợp có "transfer-encoding" hoặc "content-length"
                 if "transfer-encoding" in response_headers:
