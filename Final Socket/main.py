@@ -268,7 +268,7 @@ def deal_with_client(client_socket, client_address, whitelisting, time_range, ca
                     client_socket.sendall(response_data)
                     return
 
-                if method[0].upper() ==  "POST":
+                if method[0].upper() ==  "POST" and b"100" in response_data.split(b"\r\n")[0]:
                     server.sendall(response_data)
                     response_data = receive_data_from_server(server)
                 
