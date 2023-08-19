@@ -264,14 +264,31 @@ def deal_with_client(client_socket, client_address, whitelisting, time_range, ca
                 response_data = server.recv(4096)
                 response_method, response_url, response_headers = parse_data(response_data)
 
-                if method[0].upper() == "HEAD":
+                if method.upper() == "HEAD":
+                    # Nếu phương thức yêu cầu là HEAD, gửi dữ liệu phản hồi nhận được trở lại cho máy khách.
                     client_socket.sendall(response_data)
                     return
 
-                if method[0].upper() ==  "POST" and b"100" in response_data.split(b"\r\n")[0]:
-                    server.sendall(response_data)
+                if method.upper() == "POST" and b"100 Continue" in response_data.split(b"\r\n")[0]:
+                    # Nếu phương thức yêu cầu là POST và phản hồi bao gồm "100 Continue", tiến hành gửi dữ liệu POST thực sự.
+
+                    # Gửi dữ liệu POST ban đầu (loại bỏ phần tiêu đề) tới máy chủ.
+                    server.sendall(client_data.split(b"\r\n\r\n", 1)[1])
+
+                    # Nhận và bỏ qua phản hồi "100 Continue" từ máy chủ.
+                    while not response_data.endswith(b"\r\n\r\n"):
+                        try:
+                            data = server.recv(4096)
+                            response_data += data
+                        except Exception as Error:
+                            print(f"Lỗi khi nhận phản hồi '100 Continue': {Error}")
+                            break
+
+                    # Bây giờ tiến hành gửi dữ liệu POST còn lại và nhận phản hồi thực sự từ máy chủ.
+                    server.sendall(client_data.split(b"\r\n\r\n", 1)[1])
                     response_data = receive_data_from_server(server)
-                
+
+
                 # Xử lý các trường hợp có "transfer-encoding" hoặc "content-length"
                 if "transfer-encoding" in response_headers:
                     while not response_data.endswith(b"0\r\n\r\n"):
@@ -293,7 +310,8 @@ def deal_with_client(client_socket, client_address, whitelisting, time_range, ca
                 
                 # Nếu đây là dữ liệu ảnh, lưu vào cache
                 if response_headers.get("content-type", "").startswith("image/"):
-                    cache.put(domain_name, image_name, response_data)
+                    head,body = response_data.split(b'\r\n\r\n', 1)
+                    cache.put(domain_name, image_name, body)
 
                 print(domain_name)
                 print(response_method)
